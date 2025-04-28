@@ -8,10 +8,14 @@
 #include "../include/window.h"
 #include "../include/control.h"
 #include "../include/fileops.h"
+#include <commctrl.h> // Required for status bar
+#include <Shlwapi.h> // Required for PathFindFileName
 
 // Global variables
-static HINSTANCE g_hInstance = NULL;  // Application instance handle
-static HWND g_hEdit = NULL;          // Global handle to the edit control
+HINSTANCE g_hInstance = NULL;  // Application instance handle (made non-static)
+HWND g_hEdit = NULL;          // Global handle to the edit control (made non-static)
+HWND g_hStatusBar = NULL;     // Global handle to the status bar control
+EditorState g_editorState;    // Global editor state (file path, size, etc.)
 
 /**
  * @brief Registers the main window class for the application.
@@ -128,9 +132,35 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
                 MessageBox(hWnd, "Failed to create editor control!", "Error", MB_ICONERROR | MB_OK);
                 return -1;
             }
+
+            // Initialize editor state
+            ZeroMemory(&g_editorState, sizeof(EditorState));
+            strcpy_s(g_editorState.currentFilePath, MAX_PATH, "Untitled");
+            g_editorState.currentFileSize = 0;
+
+            // Create the status bar
+            g_hStatusBar = CreateWindowEx(
+                0,                          // no extended styles
+                STATUSCLASSNAME,            // status bar class name
+                NULL,                       // no text initially
+                WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, // styles
+                0, 0, 0, 0,                 // x, y, width, height (handled by WM_SIZE)
+                hWnd,                       // parent window
+                (HMENU)ID_STATUSBAR,        // control ID
+                g_hInstance,                // instance
+                NULL);                      // no creation data
+
+            if (!g_hStatusBar) {
+                MessageBox(hWnd, "Failed to create status bar!", "Error", MB_ICONERROR | MB_OK);
+                return -1; // Fail window creation
+            }
+
+            // Initial status bar update
+            UpdateStatusBar(g_hStatusBar, &g_editorState);
+
             break;
         }
-        
+
         case WM_SIZE:
             HandleWindowResize(hWnd, lParam);
             break;
@@ -207,9 +237,48 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
  * @param lParam Contains the new width and height of the client area.
  */
 void HandleWindowResize(HWND hWnd, LPARAM lParam) {
-    if (g_hEdit) {
-        int width = LOWORD(lParam);
-        int height = HIWORD(lParam);
-        SetWindowPos(g_hEdit, NULL, 0, 0, width, height, SWP_NOZORDER);
+    // Send WM_SIZE to status bar first so it can resize itself
+    if (g_hStatusBar) {
+        SendMessage(g_hStatusBar, WM_SIZE, 0, 0);
     }
+
+    // Calculate the height of the status bar
+    RECT statusBarRect;
+    int statusBarHeight = 0;
+    if (g_hStatusBar && GetWindowRect(g_hStatusBar, &statusBarRect)) {
+        statusBarHeight = statusBarRect.bottom - statusBarRect.top;
+    }
+
+    // Resize the edit control to fill the remaining client area
+    if (g_hEdit) {
+        int clientWidth = LOWORD(lParam);
+        int clientHeight = HIWORD(lParam);
+        int editHeight = clientHeight - statusBarHeight;
+        if (editHeight < 0) editHeight = 0; // Prevent negative height
+
+        SetWindowPos(g_hEdit, NULL, 0, 0, clientWidth, editHeight, SWP_NOZORDER);
+    }
+}
+
+/**
+ * @brief Updates the status bar text with the current editor state.
+ *
+ * @param hStatusBar Handle to the status bar control.
+ * @param state Pointer to the EditorState structure containing file info.
+ */
+void UpdateStatusBar(HWND hStatusBar, const EditorState* state) {
+    if (!hStatusBar || !state) {
+        return;
+    }
+
+    char statusText[MAX_PATH + 50]; // Buffer for formatted text
+    char* fileName = PathFindFileName(state->currentFilePath); // Extract just the filename
+
+    // Format the status text
+    sprintf_s(statusText, sizeof(statusText), "File: %s | Size: %ld bytes",
+              fileName ? fileName : "Untitled", // Show "Untitled" if path is empty or invalid
+              state->currentFileSize);
+
+    // Set the text in the first part of the status bar
+    SendMessage(hStatusBar, SB_SETTEXT, 0, (LPARAM)statusText);
 }

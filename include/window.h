@@ -47,4 +47,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
  */
 void HandleWindowResize(HWND hWnd, LPARAM lParam);
 
+/**
+ * @brief Updates the status bar text with the current editor state.
+ *
+ * @param hStatusBar Handle to the status bar control.
+ * @param state Pointer to the EditorState structure containing file info.
+ */
+void UpdateStatusBar(HWND hStatusBar, const EditorState* state);
+
 #endif /* WINDOW_H */

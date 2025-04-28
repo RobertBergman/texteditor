@@ -20,6 +20,9 @@
 #define EDITOR_TITLE "Professional Text Editor"
 #define EDITOR_VERSION "1.0"
 
+// Control IDs
+#define ID_STATUSBAR 101
+
 // Error handling macro
 #define EDITOR_CHECK_ERROR(condition, message, title) \
     if (!(condition)) { \
@@ -30,5 +33,12 @@
 // Exit codes
 #define EDITOR_SUCCESS 0
 #define EDITOR_ERROR 1
+
+// Structure to hold editor state (e.g., current file info)
+typedef struct {
+    char currentFilePath[MAX_PATH];
+    long currentFileSize;
+    // BOOL isModified; // Future enhancement
+} EditorState;
 
 #endif /* EDITOR_H */

@@ -32,7 +32,7 @@ set SOURCE_FILES=src\main.c src\window.c src\control.c src\fileops.c
 
 REM Compile
 echo Compiling source files...
-cl %COMPILE_OPTIONS% %INCLUDE_DIRS% %SOURCE_FILES% /Fe:"build\direct\editor.exe" /link user32.lib gdi32.lib comdlg32.lib kernel32.lib
+cl %COMPILE_OPTIONS% %INCLUDE_DIRS% %SOURCE_FILES% /Fe:"build\direct\editor.exe" /link user32.lib gdi32.lib comdlg32.lib kernel32.lib comctl32.lib shlwapi.lib
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

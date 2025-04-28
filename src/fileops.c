@@ -7,6 +7,11 @@
 
 #include "../include/fileops.h"
 #include "../include/control.h"
+#include "../include/window.h" // Needed for UpdateStatusBar and EditorState
+
+// External global variables defined in window.c
+extern HWND g_hStatusBar;
+extern EditorState g_editorState;
 
 /**
  * @brief Displays an Open file dialog and loads the selected file into the editor.
@@ -61,7 +66,14 @@ BOOL EditorOpenFile(HWND hWnd, HWND hEdit) {
     
     // Clean up
     free(fileText);
-    
+
+    // Update editor state and status bar if successful
+    if (result) {
+        strcpy_s(g_editorState.currentFilePath, MAX_PATH, ofn.lpstrFile);
+        g_editorState.currentFileSize = fileSize;
+        UpdateStatusBar(g_hStatusBar, &g_editorState);
+    }
+
     return result;
 }
 
@@ -116,13 +128,18 @@ BOOL EditorSaveFile(HWND hWnd, HWND hEdit) {
     // Write the text to the file
     BOOL result = WriteBufferToFile(ofn.lpstrFile, editorText, strlen(editorText));
     
-    // Clean up
+    long savedSize = strlen(editorText); // Get the size before freeing
     free(editorText);
-    
+
     if (!result) {
         MessageBox(hWnd, "Failed to write file.", "Error", MB_OK | MB_ICONERROR);
+    } else {
+        // Update editor state and status bar on successful save
+        strcpy_s(g_editorState.currentFilePath, MAX_PATH, ofn.lpstrFile);
+        g_editorState.currentFileSize = savedSize;
+        UpdateStatusBar(g_hStatusBar, &g_editorState);
     }
-    
+
     return result;
 }
 
@@ -136,8 +153,15 @@ BOOL EditorNewFile(HWND hEdit) {
     if (!hEdit) {
         return FALSE;
     }
-    
-    return SetEditorText(hEdit, "");
+
+    BOOL result = SetEditorText(hEdit, "");
+    if (result) {
+        // Update editor state and status bar for new file
+        strcpy_s(g_editorState.currentFilePath, MAX_PATH, "Untitled");
+        g_editorState.currentFileSize = 0;
+        UpdateStatusBar(g_hStatusBar, &g_editorState);
+    }
+    return result;
 }
 
 /**

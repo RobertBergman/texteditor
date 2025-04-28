@@ -8,6 +8,7 @@
 
 #include "../include/editor.h"
 #include "../include/window.h"
+#include <commctrl.h> // Required for InitCommonControlsEx
 
 // Global instance handle
 static HINSTANCE g_hInstance = NULL;
@@ -27,11 +28,20 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     UNREFERENCED_PARAMETER(lpCmdLine);
     // Store the instance handle
     g_hInstance = hInstance;
-    
+
+    // Initialize common controls (required for status bar)
+    INITCOMMONCONTROLSEX icex;
+    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    icex.dwICC = ICC_BAR_CLASSES; // Load status bar control class
+    if (!InitCommonControlsEx(&icex)) {
+        MessageBox(NULL, "Failed to initialize common controls!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+
     // Register the window class
     ATOM classAtom = RegisterMainWindow(hInstance);
     EDITOR_CHECK_ERROR(classAtom, "Window Registration Failed!", "Error");
-    
+
     // Create the main window
     BOOL windowCreated = CreateMainWindow(hInstance, nCmdShow);
     EDITOR_CHECK_ERROR(windowCreated, "Window Initialization Failed!", "Error");

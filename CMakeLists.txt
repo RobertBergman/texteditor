@@ -24,11 +24,13 @@ file(GLOB_RECURSE SOURCES "src/*.c")
 add_executable(editor ${SOURCES})
 
 # Link libraries
-target_link_libraries(editor PRIVATE 
+target_link_libraries(editor PRIVATE
     user32
     gdi32
     comdlg32
     kernel32
+    Comctl32 # Added for common controls (status bar)
+    Shlwapi  # Added for PathFindFileName
 )
 
 # Set output directories
